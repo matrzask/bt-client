@@ -13,8 +13,8 @@
 #include "esp_log.h"
 
 #define GATTC_TAG "GATTC"
-#define REMOTE_SERVICE_UUID 0x180F
-#define REMOTE_NOTIFY_CHAR_UUID 0x2A19
+#define REMOTE_SERVICE_UUID 0xFFE0
+#define REMOTE_NOTIFY_CHAR_UUID 0xFFE1
 #define PROFILE_NUM 1
 #define PROFILE_A_APP_ID 0
 #define INVALID_HANDLE 0
@@ -199,7 +199,8 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
                     if (count > 0 && (char_elem_result[0].properties & ESP_GATT_CHAR_PROP_BIT_NOTIFY))
                     {
                         gl_profile_tab[PROFILE_A_APP_ID].char_handle = char_elem_result[0].char_handle;
-                        esp_ble_gattc_read_char(gattc_if, gl_profile_tab[PROFILE_A_APP_ID].conn_id, char_elem_result[0].char_handle, ESP_GATT_AUTH_REQ_NONE);
+                        // esp_ble_gattc_read_char(gattc_if, gl_profile_tab[PROFILE_A_APP_ID].conn_id, char_elem_result[0].char_handle, ESP_GATT_AUTH_REQ_NONE);
+                        esp_ble_gattc_register_for_notify(gattc_if, gl_profile_tab[PROFILE_A_APP_ID].remote_bda, char_elem_result[0].char_handle);
                     }
                 }
                 free(char_elem_result);
@@ -222,6 +223,17 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
             printf("Battery level: %d%%", p_data->read.value[i]);
         }
         printf("\n");
+        break;
+    case ESP_GATTC_NOTIFY_EVT:
+        if (p_data->notify.is_notify)
+        {
+            ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive notify value:");
+        }
+        else
+        {
+            ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive indicate value:");
+        }
+        esp_log_buffer_hex(GATTC_TAG, p_data->notify.value, p_data->notify.value_len);
         break;
     case ESP_GATTC_WRITE_DESCR_EVT:
         if (p_data->write.status != ESP_GATT_OK)
