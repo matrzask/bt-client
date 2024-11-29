@@ -23,8 +23,7 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
 static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param);
 static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param);
 
-static const char remote_device_name[] = "iTAG";
-static const uint8_t device_address[] = {0xff, 0xff, 0xb4, 0x0a, 0xf9, 0x96};
+static const char remote_device_name[] = "iTAG            ";
 static bool connect = false;
 static bool get_server = false;
 static esp_gattc_char_elem_t *char_elem_result = NULL;
@@ -220,7 +219,7 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
         ESP_LOGI(GATTC_TAG, "read char success");
         for (int i = 0; i < p_data->read.value_len; i++)
         {
-            printf("battery level: %d%%", p_data->read.value[i]);
+            printf("Battery level: %d%%", p_data->read.value[i]);
         }
         printf("\n");
         break;
@@ -264,6 +263,7 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
         connect = false;
         get_server = false;
         ESP_LOGI(GATTC_TAG, "ESP_GATTC_DISCONNECT_EVT, reason = %d", p_data->disconnect.reason);
+        esp_ble_gap_start_scanning(30);
         break;
     default:
         break;
@@ -307,7 +307,7 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
 
             if (adv_name != NULL)
             {
-                if (memcmp(scan_result->scan_rst.bda, device_address, 6) == 0)
+                if (strlen(remote_device_name) == adv_name_len && strncmp((char *)adv_name, remote_device_name, adv_name_len) == 0)
                 {
                     ESP_LOGI(GATTC_TAG, "searched device %s", remote_device_name);
                     if (connect == false)
