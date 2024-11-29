@@ -30,6 +30,7 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
 static const char remote_device_name[] = "iTAG            ";
 static bool connect = false;
 static bool get_server = false;
+static uint8_t alarm = 0;
 
 static esp_ble_scan_params_t ble_scan_params = {
     .scan_type = BLE_SCAN_TYPE_ACTIVE,
@@ -49,6 +50,8 @@ struct gattc_profile_inst
     uint16_t service_count;
     esp_bd_addr_t remote_bda;
 };
+
+esp_gattc_char_elem_t alarm_char;
 
 static struct gattc_profile_inst gl_profile_tab[PROFILE_NUM] = {
     [PROFILE_A_APP_ID] = {
@@ -187,19 +190,16 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
                         switch (char_elem_result[j].uuid.uuid.uuid16)
                         {
                         case BUTTON_NOTIFY_CHAR_UUID:
-                            ESP_LOGI(GATTC_TAG, "Found button notify characteristic");
                             esp_ble_gattc_register_for_notify(gattc_if, gl_profile_tab[PROFILE_A_APP_ID].remote_bda, char_elem_result[j].char_handle);
                             break;
                         case BATTERY_LEVEL_CHAR_UUID:
-                            ESP_LOGI(GATTC_TAG, "Found battery level characteristic");
                             esp_ble_gattc_read_char(gattc_if, p_data->search_cmpl.conn_id, char_elem_result[j].char_handle, ESP_GATT_AUTH_REQ_NONE);
                             break;
                         case ALERT_LEVEL_CHAR_UUID:
-                            ESP_LOGI(GATTC_TAG, "Found alert level characteristic");
+                            alarm_char = char_elem_result[j];
                             break;
                         default:
-                            ESP_LOGI(GATTC_TAG, "Found unknown characteristic");
-                            ESP_LOGI(GATTC_TAG, "Characteristic UUID: %x", char_elem_result[0].uuid.uuid.uuid16);
+                            // ESP_LOGI(GATTC_TAG, "Characteristic UUID: %x", char_elem_result[0].uuid.uuid.uuid16);
                             break;
                         }
                     }
@@ -237,6 +237,18 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
             ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive indicate value:");
         }
         esp_log_buffer_hex(GATTC_TAG, p_data->notify.value, p_data->notify.value_len);
+        if (alarm == 0)
+        {
+            alarm = 1;
+        }
+        else
+        {
+            alarm = 0;
+        }
+        if (alarm_char.char_handle != INVALID_HANDLE)
+        {
+            esp_ble_gattc_write_char(gattc_if, p_data->notify.conn_id, alarm_char.char_handle, 1, &alarm, ESP_GATT_WRITE_TYPE_RSP, ESP_GATT_AUTH_REQ_NONE);
+        }
         break;
     case ESP_GATTC_SRVC_CHG_EVT:
     {
