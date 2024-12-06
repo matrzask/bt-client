@@ -264,7 +264,7 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
             ESP_LOGE(GATTC_TAG, "write char failed, error status = %x", p_data->write.status);
             break;
         }
-        ESP_LOGI(GATTC_TAG, "write char success ");
+        ESP_LOGI(GATTC_TAG, "write char success: %d", alarm);
         break;
     case ESP_GATTC_DISCONNECT_EVT:
         connect = false;
